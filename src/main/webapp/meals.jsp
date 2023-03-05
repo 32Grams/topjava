@@ -1,56 +1,53 @@
-
-<%@ page language="java" contentType="text/html;charset=UTF-8"
-         pageEncoding="ISO-8859-1"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ page import="ru.javawebinar.topjava.util.TimeUtil" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<!DOCTYPE html>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%--
+  Created by IntelliJ IDEA.
+  User: Dmitriy
+  Date: 13.02.2023
+  Time: 23:50
+  To change this template use File | Settings | File Templates.
+--%>
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-    <title>Meals Directory</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-
+    <title>Meal List</title>
+    <style>
+        .normal {color: green;}
+        .exceeded {color: red;}
+    </style>
 </head>
 <body>
-
-<div class = "container">
-
-    <h1>Meals Directory</h1>
-    <hr/>
-
-    <p>
-        <button class = "btn btn-primary" onclick="window.location.href = '/meals-form.jsp'">Add Meal</button>
-    </p>
-
-    <table class = "table table-striped table-bordered">
-
-        <tr class = "thead-dark">
+<section>
+    <h2><a href="index.html">Home</a></h2>
+    <h3>Meal List</h3>
+    <a href="meals?action=create">Add Meal</a>
+    <hr>
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+        <tr>
             <th>Date</th>
             <th>Description</th>
             <th>Calories</th>
-            <th>Actions</th>
+            <th></th>
+            <th></th>
         </tr>
-        <jsp:useBean id="mealsList" class="ru.javawebinar.topjava.web.MealServlet" scope="page">
-            <c:forEach var="list" items="${mealsList}">
-
-                <tr>
-                    <td><fmt:formatDate pattern="yyyy-MM-dd" value="${list.dateTime}" /></td>
-                    <td>${list.description}</td>
-                    <td>${list.calories}</td>
-                    <td>
-                        <a href = "${pageContext.request.contextPath}/MealServlet?action=EDIT&id=${list.id}">Edit</a>
-                        |
-                        <a href = "${pageContext.request.contextPath}/MealServlet?action=DELETE&id=${list.id}">Delete</a>
-                    </td>
-                </tr>
-
-            </c:forEach>
-        </jsp:useBean>
+        </thead>
+        <c:forEach items="${meals}" var="meal">
+            <jsp:useBean id="meal" scope="page" type="ru.javawebinar.topjava.model.MealTo"/>
+            <tr class="${meal.exceed ? 'exceeded' : 'normal'}">
+                <td>
+<%--                        <fmt:parseDate value="${meal.dateTime}" pattern="y-M-dd'T'H:m" var="parseDate"/>--%>
+<%--                        <fmt:formatDate value="${parseDatee}" pattern="yyyy.MM.dd HH:mm" />--%>
+                    <%=TimeUtil.toString(meal.getDateTime())%>
+                </td>
+                <td>${meal.description}</td>
+                <td>${meal.calories}</td>
+                <td><a href="meals?action=update&id=${meal.id}">Update</a></td>
+                <td><a href="meals?action=delete&id=${meal.id}">Delete</a></td>
+            </tr>
+        </c:forEach>
     </table>
-
-</div>
-
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</section>
 </body>
 </html>

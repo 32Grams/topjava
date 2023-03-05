@@ -1,97 +1,73 @@
 package ru.javawebinar.topjava.web;
 
 import org.slf4j.Logger;
-import ru.javawebinar.topjava.dao.MealsDao;
+import ru.javawebinar.topjava.repository.MealRepository;
 import ru.javawebinar.topjava.model.Meal;
-import ru.javawebinar.topjava.model.MealTo;
 import ru.javawebinar.topjava.util.MealsUtil;
-import ru.javawebinar.topjava.dao.MealsDaoImpl;
+import ru.javawebinar.topjava.repository.InMemoryMealRepository;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import javax.servlet.RequestDispatcher;
+import java.util.Objects;
 
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class MealServlet extends HttpServlet {
-    private static final Logger log = getLogger(MealServlet.class);
-    private List<MealTo> mealsList = MealsUtil.getListMealTo((List<Meal>) new MealsDaoImpl().getMeals());
+    private static final Logger LOG = getLogger(MealServlet.class);
     private static final long serialVersionUID = 1L;
-    RequestDispatcher dispatcher = null;
-    MealsDao mealsDao = null;
+    private MealRepository repository = null;
 
     public MealServlet() {
-        mealsDao = new MealsDaoImpl();
+        repository = new InMemoryMealRepository();
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String action = request.getParameter("action");
-        if (action == null) {
-            log.debug("show list");
-            action = "LIST";
-        }
-        switch (action) {
-            case "LIST":
-                listMeals(request, response);
-                break;
-            case "EDIT":
-                getSingleMeal(request, response);
-                break;
-            case "DELETE":
-                deleteMeal(request, response);
-                break;
-            default:
-                listMeals(request, response);
-                break;
-        }
-    }
-
-    private void deleteMeal(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String id = request.getParameter("id");
-        if (mealsDao.deleteMeal(Integer.parseInt(id))) {
-            request.setAttribute("NOTIFICATION", "Meal Deleted Successfully!");
-        }
-        listMeals(request, response);
-    }
-
-    private void getSingleMeal(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String id = request.getParameter("id");
-        Meal meal = mealsDao.get(Integer.parseInt(id));
-        request.setAttribute("employee", meal);
-        dispatcher = request.getRequestDispatcher("/meals-form.jsp");
-        dispatcher.forward(request, response);
-    }
-
-    private void listMeals(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setAttribute("list", mealsList);
-        dispatcher = request.getRequestDispatcher("/meals.jsp");
-        dispatcher.forward(request, response);
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config);
+        repository = new InMemoryMealRepository();
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
         String id = request.getParameter("id");
+        Meal meal = new Meal(id.isEmpty() ? null : Integer.valueOf(id),
+                LocalDateTime.parse(request.getParameter("dateTime")),
+                request.getParameter("description"),
+                Integer.parseInt(request.getParameter("calories")));
+        LOG.info(meal.isNew() ? "Create {}" : "Update {}", meal);
+        repository.save(meal);
+        response.sendRedirect("meals");
 
-        Meal e = new Meal();
-        e.setDateTime(LocalDateTime.parse(request.getParameter("dateTime")));
-        e.setDescription(request.getParameter("description"));
-        e.setCalories(Integer.parseInt(request.getParameter("calories")));
+    }
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
 
-        if (id.isEmpty() || id == null) {
-            if (mealsDao.addMeal(e)) {
-                request.setAttribute("NOTIFICATION", "Meal Saved Successfully!");
-            }
+        if(action == null) {
+            LOG.info("getAll");
+            request.setAttribute("meals",
+                    MealsUtil.getListMealTo(repository.getAll(), MealsUtil.CALORIES_PER_DAY));
+            request.getRequestDispatcher("/meals.jsp").forward(request, response);
+        } else if(action.equals("delete")) {
+            int id = getId(request);
+            LOG.info("Delete {}", id);
+            repository.delete(id);
+            response.sendRedirect("meals");
         } else {
-            e.setId(Integer.parseInt(id));
-            if (mealsDao.updateMeal(e)) {
-                request.setAttribute("NOTIFICATION", "Meal Updated Successfully!");
-            }
+            final Meal meal = action.equals("create") ?
+                    new Meal(LocalDateTime.now(), "", 1000) :
+                    repository.get(getId(request));
+            request.setAttribute("meal", meal);
+            request.getRequestDispatcher("mealEdit.jsp").forward(request, response);
         }
-        listMeals(request, response);
+    }
+    private int getId(HttpServletRequest request) {
+        String paramId = Objects.requireNonNull(request.getParameter("id"));
+        return Integer.parseInt(paramId);
     }
 }

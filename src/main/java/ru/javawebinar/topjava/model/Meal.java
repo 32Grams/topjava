@@ -3,14 +3,15 @@ package ru.javawebinar.topjava.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Month;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Meal {
-    private LocalDateTime dateTime;
-
-    private String description;
-
-    private int calories;
-    private Integer id;
+    protected Integer id;
+    protected LocalDateTime dateTime;
+    protected String description;
+    protected int calories;
 
     public Meal(Integer id, LocalDateTime dateTime, String description, int calories) {
         this.id = id;
@@ -18,7 +19,11 @@ public class Meal {
         this.description = description;
         this.calories = calories;
     }
-
+    public Meal(LocalDateTime dateTime, String description, int calories) {
+        this.dateTime = dateTime;
+        this.description = description;
+        this.calories = calories;
+    }
     public Meal() {
     }
     public void setDateTime(LocalDateTime dateTime) {
@@ -55,5 +60,17 @@ public class Meal {
     public Integer getId() {
         return id;
     }
+    public boolean isNew() {
+        return id==null;
+    }
 
+    @Override
+    public String toString() {
+        return "Meal{" +
+                "dateTime=" + dateTime +
+                ", description='" + description + '\'' +
+                ", calories=" + calories +
+                ", id=" + id +
+                '}';
+    }
 }
